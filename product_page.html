@@ -28,6 +28,14 @@
     .message.error{background:#fff1f2;color:var(--danger);border:1px solid #fecaca;display:block}
     .small{font-size:12px;color:var(--muted)}
     .preview{display:block;max-width:100%;height:auto;border-radius:8px;border:1px solid #e6eef8;margin-top:8px}
+  /* product list in the aside */
+  .product-list{display:flex;flex-direction:column;gap:10px;margin-top:8px;max-height:320px;overflow:auto}
+  .product-item{display:flex;gap:10px;align-items:center;padding:8px;border-radius:8px;border:1px solid #f1f5f9;background:#fff}
+  .product-thumb{width:56px;height:44px;flex:0 0 56px;display:inline-flex;align-items:center;justify-content:center;background:#fff;padding:6px;border-radius:6px;border:1px solid #e6eef8}
+  .product-thumb img{max-width:100%;max-height:100%;object-fit:contain;display:block}
+  .product-meta{display:flex;flex-direction:column;font-size:13px;color:#0f172a}
+  .product-name{font-weight:700}
+  .product-sub{color:var(--muted);font-size:12px}
     .loading-inline{display:inline-block;width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,0.18);border-top-color:rgba(255,255,255,0.9);animation:spin .8s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
   </style>
@@ -96,15 +104,18 @@
       </div>
 
       <aside class="meta" aria-label="server and categories">
-        <h3 style="margin:0 0 8px 0">Server</h3>
-        <div class="small">Posting to</div>
+        <!-- <h3 style="margin:0 0 8px 0">Server</h3> -->
+        <!-- <div class="small">Posting to</div> -->
         <div id="serverUrlDisplay" style="margin-top:8px;font-weight:700"></div>
 
         <h3 style="margin-top:14px;margin-bottom:6px">Categories</h3>
         <div id="categoriesPreview" class="small">Will show loaded categories here.</div>
 
-        <h3 style="margin-top:14px;margin-bottom:6px">Notes</h3>
-        <div class="small">Image upload uses multipart/form-data with field name pictureFile. Response messages shown below forms.</div>
+        <h3 style="margin-top:14px;margin-bottom:6px">Products</h3>
+        <div id="productsList" class="product-list small">Loading products...</div>
+
+        <!-- <h3 style="margin-top:14px;margin-bottom:6px">Notes</h3> -->
+        <!-- <div class="small">Image upload uses multipart/form-data with field name pictureFile. Response messages shown below forms.</div> -->
       </aside>
     </div>
   </div>
@@ -310,6 +321,62 @@
 
     // Init
     loadCategories();
+    // Load and display products in the aside
+    async function loadProducts() {
+      const out = document.getElementById('productsList');
+      out.textContent = 'Loading products...';
+      try {
+        // GET to /api/products as requested. Many APIs accept an empty filter in the body.
+        const res = await fetch(`${serverUrl}/api/products`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+        //   body: JSON.stringify({})
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const payload = await res.json();
+        const list = Array.isArray(payload?.data) ? payload.data : [];
+        if (list.length === 0) {
+          out.textContent = 'No products found';
+          return;
+        }
+
+        out.innerHTML = '';
+        for (const p of list) {
+          const item = document.createElement('div'); item.className = 'product-item';
+
+          const thumbWrap = document.createElement('div'); thumbWrap.className = 'product-thumb';
+          const img = document.createElement('img');
+          if (p.pictures && p.pictures.length) {
+            const path = p.pictures[0].path || '';
+            img.src = path.startsWith('http') ? path : (serverUrl + path);
+            img.alt = p.name + ' image';
+          } else {
+            img.alt = 'No image';
+            img.src = '';
+          }
+          thumbWrap.appendChild(img);
+
+          const meta = document.createElement('div'); meta.className = 'product-meta';
+          const name = document.createElement('div'); name.className = 'product-name'; name.textContent = p.name;
+          const sub = document.createElement('div'); sub.className = 'product-sub';
+          sub.textContent = (p.category?.name ? p.category.name + ' · ' : '') + (typeof p.stockQuantity === 'number' ? p.stockQuantity + ' in stock' : '');
+
+          meta.appendChild(name);
+          meta.appendChild(sub);
+
+          item.appendChild(thumbWrap);
+          item.appendChild(meta);
+
+          out.appendChild(item);
+        }
+      } catch (err) {
+        console.error('Failed to load products', err);
+        out.textContent = 'Failed to load products';
+      }
+    }
+
+    // call it after categories
+    loadProducts();
   </script>
 </body>
 </html>
