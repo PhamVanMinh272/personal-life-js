@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Create Product</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --card: #ffffff;
+      --accent: #2563eb;
+      --accent-2: #16a34a;
+      --muted: #6b7280;
+      --danger: #dc2626;
+      --radius: 10px;
+      --shadow: 0 6px 20px rgba(16,24,40,0.06);
+      --gap: 14px;
+    }
+
+    html,body {
+      height: 100%;
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(180deg, #f8fafc 0%, var(--bg) 100%);
+      color: #111827;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    .wrap {
+      max-width: 720px;
+      margin: 48px auto;
+      padding: 20px;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .left {
+      padding-right: 8px;
+    }
+
+    h1 {
+      margin: 0 0 6px 0;
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    p.lead {
+      margin: 0 0 18px 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    form {
+      display: grid;
+      gap: var(--gap);
+    }
+
+    label {
+      display:block;
+      font-size: 13px;
+      color: #111827;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    input[type="text"], input[type="number"], select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #e6eef8;
+      background: #fbfdff;
+      font-size: 14px;
+      color: #0f172a;
+      outline: none;
+      transition: box-shadow .12s ease, border-color .12s ease;
+    }
+
+    input[type="text"]:focus, input[type="number"]:focus, select:focus {
+      box-shadow: 0 6px 20px rgba(37,99,235,0.06);
+      border-color: var(--accent);
+    }
+
+    .row {
+      display:flex;
+      gap: 12px;
+    }
+
+    .row > * { flex: 1; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      color: #fff;
+      background: linear-gradient(180deg,var(--accent), #1e40af);
+      transition: transform .06s ease, opacity .08s ease;
+    }
+
+    .btn:active { transform: translateY(1px); }
+    .btn[disabled] { opacity: 0.6; cursor: not-allowed; }
+
+    .btn-secondary {
+      background: linear-gradient(180deg,#94a3b8,#64748b);
+    }
+
+    .meta {
+      background: #fbfdff;
+      border-radius: 8px;
+      padding: 14px;
+      border: 1px solid #eef2ff;
+      font-size: 14px;
+      color: #0f172a;
+    }
+
+    .meta h3 {
+      margin: 0 0 8px 0;
+      font-size: 15px;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .message {
+      margin-top: 8px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-weight: 600;
+      display: none;
+      font-size: 14px;
+    }
+
+    .message.success {
+      background: #ecfdf5;
+      color: #065f46;
+      border: 1px solid #bbf7d0;
+      display: block;
+    }
+
+    .message.error {
+      background: #fff1f2;
+      color: var(--danger);
+      border: 1px solid #fecaca;
+      display: block;
+    }
+
+    .small {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .loading-inline {
+      display:inline-block;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.18);
+      border-top-color: rgba(255,255,255,0.9);
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 800px) {
+      .card { grid-template-columns: 1fr; }
+      .wrap { padding: 12px; margin: 20px auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card" role="region" aria-label="Create product">
+      <div class="left">
+        <h1>Create Product</h1>
+        <p class="lead">Fill in the product details and choose a category from the list fetched from the server.</p>
+
+        <form id="productForm" novalidate>
+          <div>
+            <label for="name"><strong>Product Name</strong></label>
+            <input id="name" name="name" type="text" placeholder="Chair" required />
+            <div id="nameErr" class="small" style="color:#b91c1c;display:none;margin-top:6px;">Name is required</div>
+          </div>
+
+          <div>
+            <label for="category"><strong>Category</strong></label>
+            <select id="category" name="category" required>
+              <option value="">Loading categories...</option>
+            </select>
+            <div id="catErr" class="small" style="color:#b91c1c;display:none;margin-top:6px;">Category is required</div>
+          </div>
+
+          <div>
+            <label for="stock"><strong>Stock Quantity</strong></label>
+            <input id="stock" name="stock" type="number" min="0" value="1" required />
+            <div id="stockErr" class="small" style="color:#b91c1c;display:none;margin-top:6px;">Enter a valid quantity</div>
+          </div>
+
+          <div style="display:flex;gap:12px;align-items:center;margin-top:6px;">
+            <button id="submitBtn" class="btn" type="submit">
+              <span id="submitLabel">Create Product</span>
+              <span id="submitLoader" style="display:none;margin-left:6px;" class="loading-inline" aria-hidden="true"></span>
+            </button>
+            <button id="clearBtn" class="btn btn-secondary" type="button">Clear</button>
+          </div>
+
+          <div id="message" class="message" role="status" aria-live="polite"></div>
+        </form>
+      </div>
+
+      <aside class="meta">
+        <h3>Server</h3>
+        <div class="muted">Posting to</div>
+        <div style="margin-top:8px;font-weight:700" id="serverUrlDisplay"></div>
+
+        <h3 style="margin-top:14px;">Categories</h3>
+        <div id="categoriesPreview" class="small muted">Will show loaded categories here.</div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const serverUrl = 'http://127.0.0.1:5000';
+    document.getElementById('serverUrlDisplay').textContent = serverUrl + '/api/products';
+
+    const categorySelect = document.getElementById('category');
+    const categoriesPreview = document.getElementById('categoriesPreview');
+    const messageEl = document.getElementById('message');
+    const submitBtn = document.getElementById('submitBtn');
+    const submitLabel = document.getElementById('submitLabel');
+    const submitLoader = document.getElementById('submitLoader');
+    const clearBtn = document.getElementById('clearBtn');
+
+    const nameInput = document.getElementById('name');
+    const stockInput = document.getElementById('stock');
+
+    function showMessage(text, type = 'success') {
+      messageEl.textContent = text;
+      messageEl.className = 'message ' + (type === 'success' ? 'success' : 'error');
+    }
+
+    function clearMessage() {
+      messageEl.textContent = '';
+      messageEl.className = 'message';
+    }
+
+    function setLoading(isLoading) {
+      submitBtn.disabled = isLoading;
+      clearBtn.disabled = isLoading;
+      if (isLoading) {
+        submitLoader.style.display = 'inline-block';
+      } else {
+        submitLoader.style.display = 'none';
+      }
+    }
+
+    async function loadCategories() {
+      categorySelect.innerHTML = '<option value="">Loading categories...</option>';
+      categoriesPreview.textContent = 'Loading...';
+      clearMessage();
+
+      try {
+        const res = await fetch(`${serverUrl}/api/categories`, { method: 'GET' });
+        if (!res.ok) throw new Error('Failed to load categories');
+        const data = await res.json();
+
+        const list = Array.isArray(data?.data) ? data.data : [];
+        if (list.length === 0) {
+          categorySelect.innerHTML = '<option value="">No categories found</option>';
+          categoriesPreview.textContent = 'No categories available';
+          return;
+        }
+
+        // Populate select
+        categorySelect.innerHTML = '<option value="">Choose a category</option>';
+        list.forEach(cat => {
+          const opt = document.createElement('option');
+          opt.value = String(cat.id);
+          opt.textContent = cat.name;
+          categorySelect.appendChild(opt);
+        });
+
+        categoriesPreview.textContent = list.map(c => c.name).join('; ');
+      } catch (err) {
+        categorySelect.innerHTML = '<option value="">Failed to load</option>';
+        categoriesPreview.textContent = 'Failed to load categories';
+        showMessage('Could not fetch categories from server', 'error');
+        console.error(err);
+      }
+    }
+
+    function validateForm() {
+      let ok = true;
+      clearMessage();
+
+      if (!nameInput.value.trim()) {
+        document.getElementById('nameErr').style.display = 'block';
+        ok = false;
+      } else {
+        document.getElementById('nameErr').style.display = 'none';
+      }
+
+      if (!categorySelect.value) {
+        document.getElementById('catErr').style.display = 'block';
+        ok = false;
+      } else {
+        document.getElementById('catErr').style.display = 'none';
+      }
+
+      const stockVal = Number(stockInput.value);
+      if (!Number.isFinite(stockVal) || stockVal < 0) {
+        document.getElementById('stockErr').style.display = 'block';
+        ok = false;
+      } else {
+        document.getElementById('stockErr').style.display = 'none';
+      }
+
+      return ok;
+    }
+
+    document.getElementById('productForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!validateForm()) return;
+
+      setLoading(true);
+      clearMessage();
+
+      const newProduct = {
+        name: nameInput.value.trim(),
+        categoryId: parseInt(categorySelect.value, 10),
+        stockQuantity: parseInt(stockInput.value, 10)
+      };
+
+      try {
+        const res = await fetch(`${serverUrl}/api/products`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newProduct)
+        });
+
+        if (res.ok) {
+          const result = await res.json().catch(() => null);
+          showMessage('Product created successfully', 'success');
+          // clear form
+          document.getElementById('productForm').reset();
+          // reset select to placeholder
+          categorySelect.selectedIndex = 0;
+          // Optionally update preview or take other actions
+          console.info('Create response:', result);
+        } else {
+          let errMsg = 'Failed to create product';
+          try {
+            const errData = await res.json();
+            errMsg = errData.message || JSON.stringify(errData);
+          } catch (e) {}
+          showMessage(errMsg, 'error');
+        }
+      } catch (err) {
+        console.error(err);
+        showMessage('Network error while creating product', 'error');
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    clearBtn.addEventListener('click', () => {
+      document.getElementById('productForm').reset();
+      document.getElementById('nameErr').style.display = 'none';
+      document.getElementById('catErr').style.display = 'none';
+      document.getElementById('stockErr').style.display = 'none';
+      clearMessage();
+      if (categorySelect.options.length > 0) categorySelect.selectedIndex = 0;
+    });
+
+    // Load categories on page load
+    loadCategories();
+  </script>
+</body>
+</html>

@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Create Product and Upload Image</title>
+  <style>
+    :root{
+      --bg:#f4f6f8; --card:#fff; --accent:#2563eb; --muted:#6b7280; --danger:#dc2626; --radius:10px; --shadow:0 6px 20px rgba(16,24,40,0.06);
+    }
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#f8fafc 0%,var(--bg)100%);color:#111827}
+    .wrap{max-width:920px;margin:40px auto;padding:18px}
+    .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;display:grid;grid-template-columns:1fr 360px;gap:18px}
+    @media(max-width:900px){.card{grid-template-columns:1fr}}
+    h1{margin:0 0 6px;font-size:20px}
+    p.lead{margin:0 0 16px;color:var(--muted);font-size:13px}
+    form{display:grid;gap:12px}
+    label{font-size:13px;font-weight:600;margin-bottom:6px;display:block}
+    input[type="text"],input[type="number"],select,input[type="file"]{width:100%;padding:10px 12px;border-radius:8px;border:1px solid #e6eef8;background:#fbfdff;font-size:14px}
+    input:focus,select:focus{outline:none;box-shadow:0 6px 20px rgba(37,99,235,0.06);border-color:var(--accent)}
+    .row{display:flex;gap:10px}
+    .btn{padding:10px 12px;border-radius:8px;border:none;cursor:pointer;font-weight:600;color:#fff;background:linear-gradient(180deg,var(--accent),#1e40af)}
+    .btn[disabled]{opacity:0.6;cursor:not-allowed}
+    .btn-secondary{background:linear-gradient(180deg,#94a3b8,#64748b)}
+    .meta{background:#fbfdff;border-radius:8px;padding:14px;border:1px solid #eef2ff;font-size:14px;color:#0f172a}
+    .message{margin-top:8px;padding:10px 12px;border-radius:8px;font-weight:600;display:none}
+    .message.success{background:#ecfdf5;color:#065f46;border:1px solid #bbf7d0;display:block}
+    .message.error{background:#fff1f2;color:var(--danger);border:1px solid #fecaca;display:block}
+    .small{font-size:12px;color:var(--muted)}
+    .preview{display:block;max-width:100%;height:auto;border-radius:8px;border:1px solid #e6eef8;margin-top:8px}
+    .loading-inline{display:inline-block;width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,0.18);border-top-color:rgba(255,255,255,0.9);animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card" role="region" aria-label="Create product with image">
+      <div>
+        <h1>Create Product</h1>
+        <p class="lead">Create a product then upload an image to the product using the attach-picture endpoint.</p>
+
+        <form id="productForm" novalidate>
+          <div>
+            <label for="name">Product Name</label>
+            <input id="name" name="name" type="text" placeholder="Chair" required />
+            <div id="nameErr" class="small" style="color:#b91c1c;display:none;margin-top:6px">Name is required</div>
+          </div>
+
+          <div>
+            <label for="category">Category</label>
+            <select id="category" name="category" required>
+              <option value="">Loading categories...</option>
+            </select>
+            <div id="catErr" class="small" style="color:#b91c1c;display:none;margin-top:6px">Category is required</div>
+          </div>
+
+          <div>
+            <label for="stock">Stock Quantity</label>
+            <input id="stock" name="stock" type="number" min="0" value="1" required />
+            <div id="stockErr" class="small" style="color:#b91c1c;display:none;margin-top:6px">Enter a valid quantity</div>
+          </div>
+
+          <div style="display:flex;gap:10px;align-items:center">
+            <button id="submitBtn" class="btn" type="submit"><span id="submitLabel">Create Product</span><span id="submitLoader" style="display:none;margin-left:8px" class="loading-inline" aria-hidden="true"></span></button>
+            <button id="clearBtn" class="btn btn-secondary" type="button">Clear</button>
+          </div>
+
+          <div id="createMessage" class="message" role="status" aria-live="polite"></div>
+        </form>
+
+        <hr style="margin:18px 0;border:none;border-top:1px solid #eef2ff" />
+
+        <h1 style="font-size:16px;margin-bottom:8px">Upload Image to Product</h1>
+        <p class="small" style="margin-top:0">Choose a product id or use the id returned after creation to attach a picture file.</p>
+
+        <form id="uploadForm" novalidate>
+          <div>
+            <label for="productId">Product ID</label>
+            <input id="productId" name="productId" type="number" min="1" placeholder="Enter product id or use created id" />
+            <div id="prodIdErr" class="small" style="color:#b91c1c;display:none;margin-top:6px">Product id is required</div>
+          </div>
+
+          <div>
+            <label for="pictureFile">Picture File</label>
+            <input id="pictureFile" name="pictureFile" type="file" accept="image/*" />
+            <img id="imgPreview" class="preview" style="display:none" alt="preview" />
+          </div>
+
+          <div style="display:flex;gap:10px;align-items:center">
+            <button id="uploadBtn" class="btn" type="submit"><span id="uploadLabel">Upload Image</span><span id="uploadLoader" style="display:none;margin-left:8px" class="loading-inline" aria-hidden="true"></span></button>
+            <button id="resetPreviewBtn" class="btn btn-secondary" type="button">Remove Preview</button>
+          </div>
+
+          <div id="uploadMessage" class="message" role="status" aria-live="polite"></div>
+        </form>
+      </div>
+
+      <aside class="meta" aria-label="server and categories">
+        <h3 style="margin:0 0 8px 0">Server</h3>
+        <div class="small">Posting to</div>
+        <div id="serverUrlDisplay" style="margin-top:8px;font-weight:700"></div>
+
+        <h3 style="margin-top:14px;margin-bottom:6px">Categories</h3>
+        <div id="categoriesPreview" class="small">Will show loaded categories here.</div>
+
+        <h3 style="margin-top:14px;margin-bottom:6px">Notes</h3>
+        <div class="small">Image upload uses multipart/form-data with field name pictureFile. Response messages shown below forms.</div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const serverUrl = 'http://127.0.0.1:5000';
+    document.getElementById('serverUrlDisplay').textContent = serverUrl;
+
+    // Elements
+    const categorySelect = document.getElementById('category');
+    const categoriesPreview = document.getElementById('categoriesPreview');
+    const createMessage = document.getElementById('createMessage');
+    const uploadMessage = document.getElementById('uploadMessage');
+    const submitBtn = document.getElementById('submitBtn');
+    const submitLoader = document.getElementById('submitLoader');
+    const submitLabel = document.getElementById('submitLabel');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const uploadLoader = document.getElementById('uploadLoader');
+
+    const nameInput = document.getElementById('name');
+    const stockInput = document.getElementById('stock');
+    const productIdInput = document.getElementById('productId');
+    const pictureFileInput = document.getElementById('pictureFile');
+    const imgPreview = document.getElementById('imgPreview');
+
+    // Utility
+    function showMessage(el, text, type='success') {
+      el.textContent = text;
+      el.className = 'message ' + (type === 'success' ? 'success' : 'error');
+    }
+    function clearMessage(el) { el.textContent=''; el.className='message'; }
+    function setLoading(elBtn, loaderEl, isLoading) {
+      elBtn.disabled = isLoading;
+      loaderEl.style.display = isLoading ? 'inline-block' : 'none';
+    }
+
+    // Load categories
+    async function loadCategories() {
+      categorySelect.innerHTML = '<option value="">Loading categories...</option>';
+      categoriesPreview.textContent = 'Loading...';
+      try {
+        const res = await fetch(`${serverUrl}/api/categories`, { method: 'GET' });
+        if (!res.ok) throw new Error('Failed to load categories');
+        const payload = await res.json();
+        const list = Array.isArray(payload?.data) ? payload.data : [];
+        if (list.length === 0) {
+          categorySelect.innerHTML = '<option value="">No categories found</option>';
+          categoriesPreview.textContent = 'No categories available';
+          return;
+        }
+        categorySelect.innerHTML = '<option value="">Choose a category</option>';
+        list.forEach(cat => {
+          const opt = document.createElement('option');
+          opt.value = String(cat.id);
+          opt.textContent = cat.name;
+          categorySelect.appendChild(opt);
+        });
+        categoriesPreview.textContent = list.map(c => c.name).join('; ');
+      } catch (err) {
+        categorySelect.innerHTML = '<option value="">Failed to load</option>';
+        categoriesPreview.textContent = 'Failed to load categories';
+        showMessage(createMessage, 'Could not fetch categories from server', 'error');
+        console.error(err);
+      }
+    }
+
+    // Create product
+    function validateCreate() {
+      let ok = true;
+      clearMessage(createMessage);
+      if (!nameInput.value.trim()) { document.getElementById('nameErr').style.display='block'; ok=false } else { document.getElementById('nameErr').style.display='none' }
+      if (!categorySelect.value) { document.getElementById('catErr').style.display='block'; ok=false } else { document.getElementById('catErr').style.display='none' }
+      const stockVal = Number(stockInput.value);
+      if (!Number.isFinite(stockVal) || stockVal < 0) { document.getElementById('stockErr').style.display='block'; ok=false } else { document.getElementById('stockErr').style.display='none' }
+      return ok;
+    }
+
+    document.getElementById('productForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!validateCreate()) return;
+
+      setLoading(submitBtn, submitLoader, true);
+      clearMessage(createMessage);
+
+      const newProduct = {
+        name: nameInput.value.trim(),
+        categoryId: parseInt(categorySelect.value, 10),
+        stockQuantity: parseInt(stockInput.value, 10)
+      };
+
+      try {
+        const res = await fetch(`${serverUrl}/api/products`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newProduct)
+        });
+
+        if (res.ok) {
+          const result = await res.json().catch(() => null);
+          const createdId = result?.productId ?? result?.id ?? null;
+          showMessage(createMessage, 'Product created successfully', 'success');
+          document.getElementById('productForm').reset();
+          categorySelect.selectedIndex = 0;
+          if (createdId) {
+            productIdInput.value = createdId;
+            showMessage(uploadMessage, 'Product id set to ' + createdId + ' for upload', 'success');
+          }
+          console.info('Create response:', result);
+        } else {
+          let errMsg = 'Failed to create product';
+          try { const errData = await res.json(); errMsg = errData.message || JSON.stringify(errData) } catch {}
+          showMessage(createMessage, errMsg, 'error');
+        }
+      } catch (err) {
+        console.error(err);
+        showMessage(createMessage, 'Network error while creating product', 'error');
+      } finally {
+        setLoading(submitBtn, submitLoader, false);
+      }
+    });
+
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      document.getElementById('productForm').reset();
+      document.getElementById('nameErr').style.display='none';
+      document.getElementById('catErr').style.display='none';
+      document.getElementById('stockErr').style.display='none';
+      clearMessage(createMessage);
+      if (categorySelect.options.length>0) categorySelect.selectedIndex = 0;
+    });
+
+    // Picture preview
+    pictureFileInput.addEventListener('change', () => {
+      const file = pictureFileInput.files[0];
+      if (!file) { imgPreview.style.display='none'; imgPreview.src=''; return; }
+      if (!file.type.startsWith('image/')) {
+        showMessage(uploadMessage, 'Selected file is not an image', 'error');
+        pictureFileInput.value = '';
+        imgPreview.style.display='none';
+        imgPreview.src='';
+        return;
+      }
+      const url = URL.createObjectURL(file);
+      imgPreview.src = url;
+      imgPreview.style.display = 'block';
+      clearMessage(uploadMessage);
+    });
+
+    document.getElementById('resetPreviewBtn').addEventListener('click', () => {
+      pictureFileInput.value = '';
+      imgPreview.src = '';
+      imgPreview.style.display = 'none';
+      clearMessage(uploadMessage);
+    });
+
+    // Upload image
+    function validateUpload() {
+      clearMessage(uploadMessage);
+      const pid = productIdInput.value;
+      if (!pid || Number(pid) < 1) { document.getElementById('prodIdErr').style.display='block'; return false } else { document.getElementById('prodIdErr').style.display='none' }
+      if (!pictureFileInput.files || pictureFileInput.files.length === 0) { showMessage(uploadMessage, 'Please select an image file to upload', 'error'); return false }
+      return true;
+    }
+
+    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!validateUpload()) return;
+
+      setLoading(uploadBtn, uploadLoader, true);
+      clearMessage(uploadMessage);
+
+      const productId = Number(productIdInput.value);
+      const file = pictureFileInput.files[0];
+
+      const formData = new FormData();
+      formData.append('pictureFile', file, file.name);
+
+      try {
+        const res = await fetch(`${serverUrl}/api/products/${productId}/attach-picture`, {
+          method: 'POST',
+          body: formData
+        });
+
+        if (res.ok) {
+          const data = await res.json().catch(() => null);
+          showMessage(uploadMessage, 'Image uploaded successfully', 'success');
+          // Optionally clear file input and preview
+          pictureFileInput.value = '';
+          imgPreview.src = '';
+          imgPreview.style.display = 'none';
+          console.info('Upload response:', data);
+        } else {
+          let errMsg = 'Failed to upload image';
+          try { const errData = await res.json(); errMsg = errData.error || errData.message || JSON.stringify(errData) } catch {}
+          showMessage(uploadMessage, errMsg, 'error');
+        }
+      } catch (err) {
+        console.error(err);
+        showMessage(uploadMessage, 'Network error while uploading image', 'error');
+      } finally {
+        setLoading(uploadBtn, uploadLoader, false);
+      }
+    });
+
+    // Init
+    loadCategories();
+  </script>
+</body>
+</html>
