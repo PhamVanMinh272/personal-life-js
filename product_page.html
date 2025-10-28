@@ -9,7 +9,7 @@
       --bg:#f4f6f8; --card:#fff; --accent:#2563eb; --muted:#6b7280; --danger:#dc2626; --radius:10px; --shadow:0 6px 20px rgba(16,24,40,0.06);
     }
     html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#f8fafc 0%,var(--bg)100%);color:#111827}
-    .wrap{max-width:920px;margin:40px auto;padding:18px}
+    .wrap{max-width:1500px;margin:40px auto;padding:18px}
     .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;display:grid;grid-template-columns:1fr 360px;gap:18px}
     @media(max-width:900px){.card{grid-template-columns:1fr}}
     h1{margin:0 0 6px;font-size:20px}
@@ -29,8 +29,9 @@
     .small{font-size:12px;color:var(--muted)}
     .preview{display:block;max-width:100%;height:auto;border-radius:8px;border:1px solid #e6eef8;margin-top:8px}
   /* product list in the aside */
-  .product-list{display:flex;flex-direction:column;gap:10px;margin-top:8px;max-height:320px;overflow:auto}
-  .product-item{display:flex;gap:10px;align-items:center;padding:8px;border-radius:8px;border:1px solid #f1f5f9;background:#fff}
+  .product-list{display:flex;flex-direction:column;gap:10px;margin-top:8px;max-height:620px;overflow:auto}
+  .product-item{display:flex;gap:10px;align-items:center;padding:8px;border-radius:8px;border:1px solid #f1f5f9;background:#fff;cursor:pointer}
+  .product-item.selected{border-color:var(--accent);box-shadow:0 6px 18px rgba(14,165,164,0.06)}
   .product-thumb{width:56px;height:44px;flex:0 0 56px;display:inline-flex;align-items:center;justify-content:center;background:#fff;padding:6px;border-radius:6px;border:1px solid #e6eef8}
   .product-thumb img{max-width:100%;max-height:100%;object-fit:contain;display:block}
   .product-meta{display:flex;flex-direction:column;font-size:13px;color:#0f172a}
@@ -125,7 +126,7 @@
     document.getElementById('serverUrlDisplay').textContent = serverUrl;
 
     // Elements
-    const categorySelect = document.getElementById('category');
+  const categorySelect = document.getElementById('category');
     const categoriesPreview = document.getElementById('categoriesPreview');
     const createMessage = document.getElementById('createMessage');
     const uploadMessage = document.getElementById('uploadMessage');
@@ -140,6 +141,8 @@
     const productIdInput = document.getElementById('productId');
     const pictureFileInput = document.getElementById('pictureFile');
     const imgPreview = document.getElementById('imgPreview');
+  // currently selected product id (for highlighting and autofill)
+  let selectedProductId = null;
 
     // Utility
     function showMessage(el, text, type='success') {
@@ -215,13 +218,21 @@
 
         if (res.ok) {
           const result = await res.json().catch(() => null);
-          const createdId = result?.productId ?? result?.id ?? null;
+          // handle different response shapes, including { data: { productId: 7 } }
+          const createdId = result?.productId ?? result?.id ?? result?.data?.productId ?? result?.data?.id ?? null;
           showMessage(createMessage, 'Product created successfully', 'success');
           document.getElementById('productForm').reset();
           categorySelect.selectedIndex = 0;
           if (createdId) {
+            // autofill upload product id and mark selected
             productIdInput.value = createdId;
+            selectedProductId = Number(createdId);
             showMessage(uploadMessage, 'Product id set to ' + createdId + ' for upload', 'success');
+            // refresh product list so the newly created product appears and is highlighted
+            await loadProducts();
+          } else {
+            // still refresh list if server changed state
+            await loadProducts();
           }
           console.info('Create response:', result);
         } else {
@@ -343,6 +354,7 @@
         out.innerHTML = '';
         for (const p of list) {
           const item = document.createElement('div'); item.className = 'product-item';
+          item.dataset.id = String(p.id);
 
           const thumbWrap = document.createElement('div'); thumbWrap.className = 'product-thumb';
           const img = document.createElement('img');
@@ -366,6 +378,22 @@
 
           item.appendChild(thumbWrap);
           item.appendChild(meta);
+
+          // highlight if selected
+          if (selectedProductId !== null && Number(p.id) === Number(selectedProductId)) {
+            item.classList.add('selected');
+          }
+
+          // click to autofill product id in upload form
+          item.addEventListener('click', () => {
+            productIdInput.value = String(p.id);
+            selectedProductId = Number(p.id);
+            // visually update selection: remove selected from siblings and add to this
+            const siblings = out.querySelectorAll('.product-item.selected');
+            siblings.forEach(s => s.classList.remove('selected'));
+            item.classList.add('selected');
+            showMessage(uploadMessage, 'Product id set to ' + p.id + ' for upload', 'success');
+          });
 
           out.appendChild(item);
         }
